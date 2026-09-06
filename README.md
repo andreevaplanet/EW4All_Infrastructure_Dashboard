@@ -33,6 +33,30 @@ serve the folder over GitHub Pages.
 
 ## Updating the data
 
+**The normal route — edit the workbook.** Country values are generated from
+`data/EW4All_Infrastructure_Member_Update.xlsx`. Commit a new version of that file and a
+GitHub Action rebuilds the dashboard and commits the result; the published page follows a
+minute or so later. Nothing to install and no command to run.
+
+    data/EW4All_Infrastructure_Member_Update.xlsx   the source of record for country values
+    tools/build_data.py                            regenerates the rows in index.html
+    .github/workflows/update-dashboard.yml          runs the generator on every push
+
+On the workbook's "Country data" sheet each dimension has a **CURRENT** value with its
+source and an **UPDATED** column for a Member's answer. Where an UPDATED value is present
+it wins and the source is recorded as "Member update"; otherwise the current value and its
+source carry through unchanged. Separate multiple systems or tools with a semicolon; a
+semicolon inside brackets counts as part of the entry, not as a separator. To run the
+generator yourself:
+
+    pip install openpyxl
+    python3 tools/build_data.py
+
+**Editing the page directly** still works for anything the workbook does not cover —
+category scales, the delivery routes with no reported users, field definitions. Those live
+in `index.html` and are never overwritten by the generator, which replaces only the block
+between the `BEGIN ROWS` and `END ROWS` markers.
+
 All 57 country and territory records live in the `INFRA_DATA` object inside
 `index.html`, under the `DATA SOURCE` comment banner (around line 160). One array entry
 per Member, in this field order:
