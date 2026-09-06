@@ -6,10 +6,10 @@ Reads  data/EW4All_Infrastructure_Member_Update.xlsx  ("Country data" sheet)
 Writes the `var rows = [...]` array in index.html, between the
 BEGIN ROWS / END ROWS markers. Nothing else in index.html is touched.
 
-For each dimension the workbook holds a CURRENT value, its source, and an
-UPDATED value a Member may have supplied. Where an UPDATED value is present it
-wins and the source becomes "MU" (Member update); otherwise the current value
-and its source are carried through unchanged.
+The workbook is the source of record: one row per country or territory, one
+column per field, edited in place. An empty cell, or the text "No data / To be
+completed", means the value has not been reported — it is never read as a
+negative answer.
 
 Run locally with:  python3 tools/build_data.py
 """
@@ -33,12 +33,12 @@ ND = "No data / To be completed"
 # country rows start at row 5.
 COL = {
     "name": 0, "region": 1, "subregion": 2,
-    "delivery": 4, "delivery_src": 5, "delivery_new": 6,
-    "stability": 8, "stability_src": 9, "stability_new": 10,
-    "speed": 12, "speed_new": 13,
-    "storage": 15, "storage_src": 16, "storage_new": 17,
-    "software": 19, "software_src": 20, "software_new": 21,
-    "note": 23,
+    "delivery": 3, "delivery_src": 4,
+    "stability": 5, "stability_src": 6,
+    "speed": 7,
+    "storage": 8, "storage_src": 9,
+    "software": 10, "software_src": 11,
+    "note": 12,
 }
 FIRST_DATA_ROW = 5
 
@@ -51,6 +51,10 @@ SOURCE_TAG = {
     "AOMSUC 2024": "A24",
     "Member update": "MU",
 }
+
+
+# Any of these, like an empty cell, means the value has not been reported.
+EMPTY_TOKENS = {"", "none", "no data / to be completed", "not used", "n/a", "na", "-", "\u2014"}
 
 
 def cell(row, key):
@@ -102,12 +106,10 @@ def js_list(text):
     return "[" + ",".join(js(i) for i in items) + "]"
 
 
-def resolve(row, field):
-    """Prefer a Member's updated value; fall back to the current record."""
-    updated = cell(row, field + "_new")
-    if updated:
-        return updated, "MU"
-    return cell(row, field) or ND, to_tag(cell(row, field + "_src"))
+def value_of(row, field):
+    """A field's value, with the not-reported spellings normalised to ND."""
+    raw = cell(row, field)
+    return ND if raw.strip().lower() in EMPTY_TOKENS else raw
 
 
 def build_rows():
@@ -119,22 +121,22 @@ def build_rows():
         if not name:
             continue
 
-        delivery, delivery_src = resolve(row, "delivery")
-        stability, stability_src = resolve(row, "stability")
-        storage, storage_src = resolve(row, "storage")
-        software, software_src = resolve(row, "software")
-        speed = cell(row, "speed_new") or cell(row, "speed") or ND
+        delivery = value_of(row, "delivery")
+        stability = value_of(row, "stability")
+        storage = value_of(row, "storage")
+        software = value_of(row, "software")
+        speed = value_of(row, "speed")
 
         # Reception pathway was retired from the analysis. The field is kept so the
         # row shape stays stable, but it is never populated or displayed.
         fields = [
             js(name), js(cell(row, "region")), js(cell(row, "subregion")),
             js(ND), js(""),
-            js_list(delivery), js(delivery_src),
-            js(stability), js(stability_src),
+            js_list(delivery), js(to_tag(cell(row, "delivery_src"))),
+            js(stability), js(to_tag(cell(row, "stability_src"))),
             js(speed),
-            js(storage), js(storage_src),
-            js_list(software), js(software_src),
+            js(storage), js(to_tag(cell(row, "storage_src"))),
+            js_list(software), js(to_tag(cell(row, "software_src"))),
             js(cell(row, "note")),
         ]
         lines.append("    [" + ",".join(fields) + "]")

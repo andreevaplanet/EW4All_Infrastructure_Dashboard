@@ -42,12 +42,16 @@ minute or so later. Nothing to install and no command to run.
     tools/build_data.py                            regenerates the rows in index.html
     .github/workflows/update-dashboard.yml          runs the generator on every push
 
-On the workbook's "Country data" sheet each dimension has a **CURRENT** value with its
-source and an **UPDATED** column for a Member's answer. Where an UPDATED value is present
-it wins and the source is recorded as "Member update"; otherwise the current value and its
-source carry through unchanged. Separate multiple systems or tools with a semicolon; a
-semicolon inside brackets counts as part of the entry, not as a separator. To run the
-generator yourself:
+The workbook's **Country data** sheet holds one row per country or territory and one column
+per field, edited in place. Cream cells are the values; the blue-grey **Source** cell beside
+each one records where the value came from — update it when you change a value. Separate
+multiple delivery systems or visualisation tools with a semicolon; a semicolon inside
+brackets counts as part of the entry, not as a separator. An empty cell, or
+`No data / To be completed`, means not reported, and is never read as a negative answer.
+Internet stability, internet speed and long-term storage are dropdowns, defined on the
+**Definitions** sheet.
+
+To run the generator yourself:
 
     pip install openpyxl
     python3 tools/build_data.py
