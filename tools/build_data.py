@@ -76,8 +76,17 @@ def to_tag(text):
 
 
 def js(value):
-    """A single-quoted JavaScript string literal."""
-    return "'" + str(value).replace("\\", "\\\\").replace("'", "\\'") + "'"
+    """A single-quoted JavaScript string literal, ASCII-only.
+
+    Characters above ASCII are written as \\uXXXX escapes so index.html stays pure
+    ASCII. That keeps it safe to copy and paste through editors and browsers that
+    would otherwise mangle the encoding, and it renders identically.
+    """
+    text = str(value).replace("\\", "\\\\").replace("'", "\\'")
+    out = []
+    for ch in text:
+        out.append(ch if ord(ch) < 128 else "\\u%04x" % ord(ch))
+    return "'" + "".join(out) + "'"
 
 
 def js_list(text):
