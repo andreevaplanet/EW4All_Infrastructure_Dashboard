@@ -100,18 +100,42 @@
     th { background: var(--wmo); color: #fff; text-align: left; padding: 10px 12px;
          font: 700 12px Montserrat, Arial, sans-serif; position: sticky; top: 0; }
     td { padding: 9px 12px; vertical-align: top; border-top: 1px solid #EDF1F4; font-size: 13.5px; }
-    tbody tr:hover { background: #F7FAFC; cursor: pointer; }
+    .table-wrap tbody tr:hover { background: #F7FAFC; cursor: pointer; }
     td.empty { text-align: center; padding: 26px 12px; color: var(--muted); }
     .sub { font-size: 11.5px; color: #8C99A6; }
     .chip { display: inline-block; padding: 3px 8px; font-size: 12px; font-weight: 700; }
 
-    /* definitions */
+    /* definitions & sources */
+    .card { background: #fff; border: 1px solid var(--line); padding: 20px 22px; }
+    .card-title { margin: 0 0 12px; font-size: 16px; font-weight: 700; }
+    .card-title.tight { margin-bottom: 4px; font-size: 15px; }
+    .card-sub { margin: 0 0 14px; font-size: 12.5px; line-height: 1.4; color: #7C8A99; }
+    table.dict { font-size: 13px; line-height: 1.45; }
+    table.dict th { background: #E9EDF2; color: var(--ink); padding: 8px 10px; position: static;
+                    font-size: 12px; }
+    table.dict td { padding: 8px 10px; border-top: 0; border-bottom: 1px solid #E4E9ED;
+                    color: #25384F; font-size: 13px; }
+    table.dict .dict-field { font-weight: 700; color: var(--ink); }
+    .scale-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; }
+    .scale-item { display: flex; gap: 11px; margin-bottom: 11px; }
+    .swatch { flex: 0 0 14px; width: 14px; height: 14px; margin-top: 3px; }
+    .scale-label { font-size: 13px; font-weight: 700; font-family: Montserrat, Arial, sans-serif; }
+    .scale-def { margin-top: 2px; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
     dl { margin: 0; }
     dt { font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
          color: var(--muted); margin-top: 10px; }
     dd { margin: 3px 0 0; font-size: 13.5px; }
-    ul.plain { list-style: none; margin: 10px 0 0; padding: 0; font-size: 13.5px; }
-    ul.plain li { padding: 3px 0; border-top: 1px solid #EDF1F4; }
+    /* data completeness */
+    .comp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+    .comp-card { background: #fff; border: 1px solid var(--line); border-top: 5px solid var(--wmo);
+                 padding: 18px 20px 20px; }
+    .comp-head { display: flex; align-items: baseline; gap: 12px; }
+    .comp-count { font: 800 30px/1 Montserrat, Arial, sans-serif; }
+    .comp-label { font: 700 14px Montserrat, Arial, sans-serif; }
+    .comp-sub { margin: 6px 0 12px; font-size: 12.5px; line-height: 1.4; color: #7C8A99; }
+    .comp-members { display: flex; flex-wrap: wrap; gap: 6px; }
+    .member-chip { background: var(--bg); border: 1px solid #E4E9ED; padding: 4px 9px;
+                   font-size: 12.5px; color: #25384F; }
     .note-card { background: #fff; border: 1px solid var(--line); padding: 18px 20px; margin-bottom: 18px; }
     .note-card h2 { margin: 0; font-size: 15px; }
     .note-card p { margin: 6px 0 0; font-size: 13px; color: var(--muted); max-width: 900px; }
@@ -561,53 +585,84 @@ function renderTable() {
 
 /* ---------- tab: data completeness ---------- */
 
+/* Reporting groups, worst first: the tab exists to show who to contact next. */
+var COMPLETENESS_GROUPS = [
+  ['No information', '#B5460A', 'Nothing reported on any of the three dimensions — first priority to contact.'],
+  ['Partial', '#FAA61A', 'Some dimensions reported; the rest still open.'],
+  ['Complete', '#1F7A3D', 'All three dimensions carry a reported value.']
+];
+
 function renderCompleteness() {
-  var groups = [
-    ['No information', '#B5460A', 'Nothing reported on any of the three dimensions — first priority to contact.'],
-    ['Partial', '#FAA61A', 'Some dimensions reported; the rest still open.'],
-    ['Complete', '#1F7A3D', 'All three dimensions carry a reported value.']
-  ];
-  return '<div class="note-card"><h2>Who still needs to be contacted</h2>' +
+  var cards = COMPLETENESS_GROUPS.map(function (g) {
+    var list = COUNTRIES.filter(function (c) { return c.status === g[0]; });
+    var chips = list.map(function (c) {
+      return '<span class="member-chip">' + esc(c.name) + '</span>';
+    }).join('');
+    return '<section class="comp-card" style="border-top-color:' + g[1] + '">' +
+      '<div class="comp-head">' +
+        '<span class="comp-count" style="color:' + g[1] + '">' + list.length + '</span>' +
+        '<span class="comp-label">' + esc(g[0]) + '</span>' +
+      '</div>' +
+      '<p class="comp-sub">' + esc(g[2]) + '</p>' +
+      '<div class="comp-members">' + chips + '</div>' +
+      '</section>';
+  }).join('');
+
+  return '<div class="note-card">' +
+      '<h2>Who still needs to be contacted</h2>' +
       '<p>Completeness counts the three dashboard dimensions: internet stability, long-term storage ' +
-      'and visualisation software. A Member is complete only when all three carry a reported value.</p></div>' +
-    '<div class="panel-grid">' + groups.map(function (g) {
-      var list = COUNTRIES.filter(function (c) { return c.status === g[0]; });
-      return '<section class="panel" style="border-top-color:' + g[1] + '">' +
-        '<div class="panel-body"><div class="panel-title">' + esc(g[0]) + '</div>' +
-        '<div class="panel-figure"><strong style="color:' + g[1] + '">' + list.length + '</strong>' +
-        '<span>of ' + COUNTRIES.length + '</span></div>' +
-        '<p class="breakdown-note">' + esc(g[2]) + '</p><ul class="plain">' +
-        list.map(function (c) {
-          return '<li>' + esc(c.name) + ' <span class="sub">' + esc(c.region) + '</span></li>';
-        }).join('') + '</ul></div></section>';
-    }).join('') + '</div>';
+      'and visualisation software. A Member is complete only when all three carry a reported value.</p>' +
+    '</div>' +
+    '<div class="comp-grid">' + cards + '</div>';
 }
 
 /* ---------- tab: definitions & sources ---------- */
 
+/* Category scales shown as cards beneath the dictionary. The colour is the one
+   the charts use for that value, so the legend and the bars agree. */
+var SCALE_CARDS = [
+  ['Internet connection stability', 'stabilityScale',
+   'Judge against operational use of 10-minute geostationary imagery.'],
+  ['Long-term storage capacity', 'storageScale',
+   'Refers to archiving satellite data beyond immediate operational use.']
+];
+
 function renderMethod() {
-  var dict = DEFINITIONS.map(function (d) {
-    return '<section class="panel"><div class="panel-body">' +
-      '<div class="panel-title">' + esc(d.field) + '</div>' +
-      '<dl><dt>Source</dt><dd>' + esc(d.source) + '</dd>' +
-      '<dt>Question asked</dt><dd>' + esc(d.question) + '</dd>' +
-      '<dt>How it is coded</dt><dd>' + esc(d.coding) + '</dd></dl>' +
-      '</div></section>';
+  var dictRows = DEFINITIONS.map(function (d) {
+    return '<tr>' +
+      '<td class="dict-field">' + esc(d.field) + '</td>' +
+      '<td>' + esc(d.source) + '</td>' +
+      '<td>' + esc(d.question) + '</td>' +
+      '<td>' + esc(d.coding) + '</td>' +
+      '</tr>';
   }).join('');
-  var scales = [['Internet connection stability', 'stabilityScale',
-                 'Judge against operational use of 10-minute geostationary imagery.'],
-                ['Long-term storage capacity', 'storageScale',
-                 'Refers to archiving satellite data beyond immediate operational use.']]
-    .map(function (s) {
-      return '<section class="panel"><div class="panel-body">' +
-        '<div class="panel-title">' + esc(s[0]) + '</div>' +
-        '<p class="breakdown-note">' + esc(s[2]) + '</p><dl>' +
-        INFRA_DATA[s[1]].map(function (r) {
-          return '<dt style="color:' + r[2] + '">' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>';
-        }).join('') + '</dl></div></section>';
+
+  var dictionary =
+    '<section class="card">' +
+      '<h2 class="card-title">Data dictionary</h2>' +
+      '<table class="dict"><thead><tr>' +
+        '<th style="width:15%">Field</th>' +
+        '<th style="width:22%">Source dataset</th>' +
+        '<th style="width:26%">Source question or field</th>' +
+        '<th>Coding and derivation</th>' +
+      '</tr></thead><tbody>' + dictRows + '</tbody></table>' +
+    '</section>';
+
+  var scales = SCALE_CARDS.map(function (s) {
+    var items = INFRA_DATA[s[1]].map(function (r) {
+      return '<div class="scale-item">' +
+        '<span class="swatch" style="background:' + r[2] + '"></span>' +
+        '<div><div class="scale-label">' + esc(r[0]) + '</div>' +
+        '<div class="scale-def">' + esc(r[1]) + '</div></div></div>';
     }).join('');
-  return '<div class="section-label">Where each field comes from</div><div class="stack">' + dict + '</div>' +
-    '<div class="section-label">What each category means</div><div class="stack">' + scales + '</div>';
+    return '<section class="card">' +
+      '<h2 class="card-title tight">' + esc(s[0]) + '</h2>' +
+      '<p class="card-sub">' + esc(s[2]) + '</p>' + items +
+      '</section>';
+  }).join('');
+
+  return '<div class="stack">' + dictionary +
+    '<div class="scale-grid">' + scales + '</div></div>';
 }
 
 /* ---------- country profile ---------- */
